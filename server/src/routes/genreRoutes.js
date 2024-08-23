@@ -5,7 +5,7 @@ const Season = require("../models/Season"); // Assuming you have a Season model
 
 const router = express.Router();
 
-// Create a new genre
+// Create a new genres
 router.post("/", async (req, res) => {
   const { name } = req.body;
 
