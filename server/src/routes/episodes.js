@@ -3,6 +3,10 @@ const router = express.Router();
 const Episode = require("../models/Episode");
 const Stream = require("../models/Stream"); // Assuming you have a Stream model
 const upload = require("../middleware/upload");
+const authMiddleware = require("../middleware/authMiddleware");
+
+// applying all the route authentication
+router.use(authMiddleware);
 
 // Create a new episode
 router.post("/", async (req, res) => {
@@ -78,7 +82,8 @@ router.delete("/:id", async (req, res) => {
 // Upload thumbnail for an episode
 router.post(
   "/:id/upload-thumbnail",
-  upload.single("thumbnail"), // The name of the form field for the file
+  upload.single("thumbnail"),
+
   async (req, res) => {
     try {
       const { id } = req.params;

@@ -1,5 +1,5 @@
 const express = require("express");
-const User = require("../models/User");
+const model = require("../models/User");
 const Stream = require("../models/Stream");
 const Episode = require("../models/Episode");
 const bcrypt = require("bcryptjs");
@@ -9,60 +9,64 @@ const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // Register a new user
+// Register a new user
 router.post("/registration", async (req, res) => {
   const { username, email, password } = req.body;
-
-  if (!username || !email || !password) {
-    return res.status(400).send("All fields are required");
-  }
-
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).send("User already exists");
+    let user = await model.findOne({ email });
+    if (user) {
+      return res.status(400).json({ message: "Email already registered" });
     }
 
-    const user = new User({ username, email, password });
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    user = new model({ username, email, password: hashedPassword });
     await user.save();
-    res.status(201).send({ message: "User registered successfully" });
-  } catch (err) {
-    res.status(500).send("Server error");
+
+    // Generate the JWT token
+    const payload = { userId: user._id };
+    const token = jwt.sign(payload, "khalil", { expiresIn: "1h" });
+
+    // Return the token in a JSON object
+    res.status(201).json({ token });
+  } catch (error) {
+    console.log("error is:", error);
+    res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
 
-// Login a user
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).send("Email and password are required");
-  }
-
   try {
-    const user = await User.findOne({ email });
+    let user = await model.findOne({ email });
     if (!user) {
-      return res.status(400).send("Invalid email or password");
+      return res.status(400).json({ message: "Invalid email" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).send("Invalid email or password");
+    const checkPassword = await bcrypt.compare(password, user.password);
+    if (!checkPassword) {
+      return res.status(400).json({ message: "Incorrect password" });
     }
 
-    const token = jwt.sign({ userId: user._id }, "your_jwt_secret", {
-      expiresIn: "1h",
-    });
-
-    res.send({ token });
-  } catch (err) {
-    res.status(500).send("Server error");
+    // generating jwt for login
+    const payload = { userId: user._id };
+    const token = jwt.sign(payload, "khalil", { expiresIn: "1h" });
+    res.status(200).json({ token });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
+
+// applying all the route authentication
+router.use(authMiddleware);
 
 // Get all users
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find().select("-password");
+    const users = await model.find().select("-password");
     res.send(users);
   } catch (err) {
     res.status(500).send("Server error");
@@ -72,7 +76,7 @@ router.get("/", async (req, res) => {
 // Get user by ID
 router.get("/:id", async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await model.findById(req.params.id).select("-password");
     if (!user) return res.status(404).send("User not found");
     res.send(user);
   } catch (err) {
@@ -83,9 +87,11 @@ router.get("/:id", async (req, res) => {
 // Update user by ID
 router.patch("/:id", async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    }).select("-password");
+    const user = await model
+      .findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+      })
+      .select("-password");
     if (!user) return res.status(404).send("User not found");
     res.send(user);
   } catch (err) {
@@ -96,7 +102,7 @@ router.patch("/:id", async (req, res) => {
 // Delete user by ID
 router.delete("/:id", async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await model.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).send("User not found");
     res.send({ message: "User deleted successfully" });
   } catch (err) {

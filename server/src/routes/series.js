@@ -4,6 +4,10 @@ const Series = require("../models/Series");
 const Season = require("../models/Season"); // Assuming you have a Season model
 const Episode = require("../models/Episode"); // Assuming you have an Episode model
 const upload = require("../middleware/upload");
+const authMiddleware = require("../middleware/authMiddleware");
+
+// applying all the route authentication
+router.use(authMiddleware);
 
 // Create a new series
 router.post("/", async (req, res) => {
@@ -108,6 +112,7 @@ router.post(
     { name: "thumbnail", maxCount: 1 },
     { name: "trailer", maxCount: 1 },
   ]),
+
   async (req, res) => {
     try {
       const { thumbnail, trailer } = req.files;

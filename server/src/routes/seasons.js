@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const Season = require("../models/Season");
 const Episode = require("../models/Episode"); // Assuming you have an Episode model
+const authMiddleware = require("../middleware/authMiddleware");
+
+// applying all the route authentication
+router.use(authMiddleware);
 
 // Create a new season
 router.post("/", async (req, res) => {

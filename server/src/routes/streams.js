@@ -6,6 +6,10 @@ const User = require("../models/User"); // Assuming you have a User model
 const Season = require("../models/Season");
 const Series = require("../models/Series");
 const Genre = require("../models/Genre");
+const authMiddleware = require("../middleware/authMiddleware");
+
+// applying all the route authentication
+router.use(authMiddleware);
 
 // Create a new stream
 router.post("/", async (req, res) => {
@@ -114,34 +118,38 @@ router.get("/:id/episode/season/series", async (req, res) => {
 });
 
 // Get the genre of a series of a season of an episode of a stream by stream ID
-router.get("/:id/episode/season/series/genre", async (req, res) => {
-  try {
-    const stream = await Stream.findById(req.params.id).populate({
-      path: "episodeId",
-      populate: {
-        path: "seasonId",
+router.get(
+  "/:id/episode/season/series/genre",
+
+  async (req, res) => {
+    try {
+      const stream = await Stream.findById(req.params.id).populate({
+        path: "episodeId",
         populate: {
-          path: "seriesId",
-          populate: { path: "genreIds" },
+          path: "seasonId",
+          populate: {
+            path: "seriesId",
+            populate: { path: "genreIds" },
+          },
         },
-      },
-    });
-    if (
-      !stream ||
-      !stream.episodeId ||
-      !stream.episodeId.seasonId ||
-      !stream.episodeId.seasonId.seriesId ||
-      !stream.episodeId.seasonId.seriesId.genreIds
-    ) {
-      return res
-        .status(404)
-        .json({ message: "Genre not found for this stream" });
+      });
+      if (
+        !stream ||
+        !stream.episodeId ||
+        !stream.episodeId.seasonId ||
+        !stream.episodeId.seasonId.seriesId ||
+        !stream.episodeId.seasonId.seriesId.genreIds
+      ) {
+        return res
+          .status(404)
+          .json({ message: "Genre not found for this stream" });
+      }
+      res.status(200).json(stream.episodeId.seasonId.seriesId.genreIds);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
-    res.status(200).json(stream.episodeId.seasonId.seriesId.genreIds);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 // Update a stream by ID
 router.patch("/:id", async (req, res) => {

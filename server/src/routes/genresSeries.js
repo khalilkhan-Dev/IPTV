@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const GenresSeries = require("../models/GenresSeries");
+const authMiddleware = require("../middleware/authMiddleware");
+
+// applying all the route authentication
+router.use(authMiddleware);
 
 // Create a new genre-series association
 router.post("/", async (req, res) => {

@@ -2,9 +2,12 @@ const express = require("express");
 const Genre = require("../models/Genre");
 const Series = require("../models/Series"); // Assuming you have a Series model
 const Season = require("../models/Season"); // Assuming you have a Season model
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// applying all the route authentication
+router.use(authMiddleware);
 // Create a new genres
 router.post("/", async (req, res) => {
   const { name } = req.body;
